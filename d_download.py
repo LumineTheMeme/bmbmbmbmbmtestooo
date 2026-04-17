@@ -136,6 +136,7 @@ def main():
     parser = argparse.ArgumentParser(description="Download mod metadata and extract GUID/MD5")
     parser.add_argument("-d", "--download", action="store_true", help="Perform the actual downloads")
     parser.add_argument("-t", "--threads", type=int, default=5, help="Number of worker threads (default: 5)")
+    parser.add_argument("-m", "--mod-check", action="store_true", help="Check for modification date differences")
     args = parser.parse_args()
 
     # Ensure output CSV exists for comparison
@@ -151,7 +152,7 @@ def main():
             if len(row) >= 5:
                 index = row[0].strip()
                 time_str = row[3].strip()
-                if index not in completed_times or completed_times[index] != time_str:
+                if index not in completed_times or (args.mod_check and completed_times[index] != time_str):
                     pending_tasks.append(row)
 
     print(f"[*] Found {len(pending_tasks)} pending downloads.")

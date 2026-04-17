@@ -63,15 +63,10 @@ def update_csv_line(filename, index, updated_row, lock: Lock):
                 rows = list(csv.reader(f))
 
             i = int(index) - 1
-            if 0 <= i < len(rows):
-                row = rows[i]
-                while len(row) < 7:
-                    row.append('')
-                row[5] = updated_row[5]
-                row[6] = updated_row[6]
-                rows[i] = row
-            else:
-                print(f"[×] 无效 index: {index}")
+            while len(rows) <= i:
+                rows.append([''] * 7)
+            
+            rows[i] = updated_row
 
             with open(filename, 'w', newline='', encoding='utf-8') as f:
                 writer = csv.writer(f)

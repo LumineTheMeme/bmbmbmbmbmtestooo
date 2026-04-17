@@ -47,13 +47,13 @@ def init_output_csv():
                     row.append('')
                 writer.writerow(row)
 
-def load_completed_indexes():
-    completed = set()
+def load_completed_times():
+    completed = {}
     with open(CSV_OUTPUT, 'r', encoding='utf-8') as f:
         reader = csv.reader(f)
         for row in reader:
             if len(row) >= 7 and row[5] and row[6]:  # guid 和 md5 不为空
-                completed.add(row[0].strip())
+                completed[row[0].strip()] = row[3].strip()
     return completed
 
 def update_csv_line(filename, index, updated_row, lock: Lock):
@@ -142,7 +142,7 @@ def main():
     if not os.path.exists(CSV_OUTPUT):
         init_output_csv()
     
-    completed = load_completed_indexes()
+    completed_times = load_completed_times()
     
     pending_tasks = []
     with open(CSV_INPUT, 'r', encoding='utf-8') as f:
@@ -150,7 +150,8 @@ def main():
         for row in reader:
             if len(row) >= 5:
                 index = row[0].strip()
-                if index not in completed:
+                time_str = row[3].strip()
+                if index not in completed_times or completed_times[index] != time_str:
                     pending_tasks.append(row)
 
     print(f"[*] Found {len(pending_tasks)} pending downloads.")

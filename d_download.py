@@ -4,6 +4,7 @@ import shutil
 import requests
 import sys
 import argparse
+import time
 from multiprocessing import Process, Lock, Manager, Queue, current_process
 from read_guid import read_guid
 import hashlib
@@ -78,7 +79,7 @@ def update_csv_line(filename, index, updated_row, lock: Lock):
         except Exception as e:
             print(f"[×] 更新 CSV 行失败: index={index} - {e}")
 
-def worker(task_queue: Queue, lock: Lock, total_downloaded):
+def worker(task_queue: Queue, lock: Lock, total_downloaded, last_print_time):
     while True:
         try:
             task = task_queue.get(timeout=1)
@@ -104,9 +105,15 @@ def worker(task_queue: Queue, lock: Lock, total_downloaded):
                             with lock:
                                 total_downloaded.value += local_bytes
                                 current_total = total_downloaded.value
+                                current_time = time.time()
+                                should_print = (current_time - last_print_time.value) >= 1.0
+                                if should_print:
+                                    last_print_time.value = current_time
+
                             local_bytes = 0
-                            sys.stdout.write(f"\r[*] Total Downloaded: {format_size(current_total)}    ")
-                            sys.stdout.flush()
+                            if should_print:
+                                sys.stdout.write(f"\r[*] Total Downloaded: {format_size(current_total)}    ")
+                                sys.stdout.flush()
 
                 if local_bytes > 0:
                     with lock:
@@ -167,6 +174,7 @@ def main():
     manager = Manager()
     lock = Lock()
     total_downloaded = manager.Value('Q', 0)
+    last_print_time = manager.Value('d', 0.0)
     task_queue = manager.Queue()
     
     for row in pending_tasks:
@@ -182,7 +190,7 @@ def main():
     processes = []
     try:
         for i in range(args.threads):
-            p = Process(target=worker, args=(task_queue, lock, total_downloaded), name=f"Worker-{i+1}")
+            p = Process(target=worker, args=(task_queue, lock, total_downloaded, last_print_time), name=f"Worker-{i+1}")
             p.start()
             processes.append(p)
 

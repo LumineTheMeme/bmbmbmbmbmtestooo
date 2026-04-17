@@ -1,0 +1,46 @@
+name: Daily Mod List Update
+
+on:
+  schedule:
+    - cron: '0 0 * * *' # Run every day at midnight UTC
+  workflow_dispatch: # Allow manual trigger
+
+jobs:
+  update-list:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+
+      - name: Run URL Scraper (d_url.py)
+        run: python d_url.py
+
+      - name: Run Download Process (d_download.py)
+        run: python d_download.py -d
+
+      - name: Commit and push changes
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git add d_download.csv
+          
+          # Only commit if there are changes
+          if git diff --staged --quiet; then
+            echo "No changes in d_download.csv."
+          else
+            git commit -m "Automated daily update of d_download.csv"
+            git push
+          fi

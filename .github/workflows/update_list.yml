@@ -31,15 +31,26 @@ jobs:
       - name: Run Download Process (d_download.py)
         run: python d_download.py -d
 
+      - name: Run KK URL Scraper (d_url.py)
+        run: |
+          cd kk
+          python d_url.py
+
+      - name: Run KK Download Process (d_download.py)
+        run: |
+          cd kk
+          python d_download.py -d
+
       - name: Commit and push changes
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
           git add d_download.csv
+          git add kk/d_download.csv
           
           # Only commit if there are changes
           if git diff --staged --quiet; then
-            echo "No changes in d_download.csv."
+            echo "No changes in d_download.csv or kk/d_download.csv."
           else
             git commit -m "Automated daily update of d_download.csv"
             git push
